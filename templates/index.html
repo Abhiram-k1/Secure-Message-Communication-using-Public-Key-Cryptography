@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Message Communication — RSA-2048 Live Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0d0f12;
+  --bg2:       #131519;
+  --bg3:       #1a1d22;
+  --bg4:       #21252c;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.13);
+  --text:      #e2e4e9;
+  --text2:     #8a8f9a;
+  --text3:     #4e535d;
+  --alice:     #4fa3e0;
+  --alice-bg:  rgba(79,163,224,0.09);
+  --alice-bd:  rgba(79,163,224,0.22);
+  --bob:       #3ecfa3;
+  --bob-bg:    rgba(62,207,163,0.09);
+  --bob-bd:    rgba(62,207,163,0.22);
+  --purple:    #9d8ff5;
+  --amber:     #e8a838;
+  --green:     #5bbf6e;
+  --red:       #e05555;
+  --mono:      'JetBrains Mono', monospace;
+  --sans:      'Syne', sans-serif;
+  --r:         10px;
+  --rl:        14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+body{padding:28px 22px 52px}
+
+/* ── header ── */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap}
+.hdr-l h1{font-size:17px;font-weight:600;letter-spacing:-.01em;margin-bottom:3px}
+.hdr-l p{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.badges{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.badge{padding:3px 9px;border-radius:999px;font-size:10.5px;font-family:var(--mono);border:0.5px solid var(--border2);color:var(--text2);background:var(--bg3)}
+.badge.live{border-color:var(--bob-bd);color:var(--bob);background:var(--bob-bg)}
+
+/* ── tabs ── */
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:0.5px solid var(--border2)}
+.tab-btn{padding:8px 16px;font-family:var(--mono);font-size:12px;color:var(--text3);background:transparent;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab-btn:hover{color:var(--text2)}
+.tab-btn.active{color:var(--alice);border-bottom-color:var(--alice)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── step strip ── */
+.steps{display:flex;gap:5px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.steps-lbl{font-size:10.5px;font-family:var(--mono);color:var(--text3);margin-right:4px}
+.sp{padding:3px 11px;border-radius:999px;font-size:10.5px;font-family:var(--mono);border:0.5px solid var(--border);color:var(--text3);background:transparent;transition:all .25s}
+.sp.done{border-color:rgba(91,191,110,.35);color:var(--green);background:rgba(91,191,110,.07)}
+.sp.active{border-color:rgba(232,168,56,.5);color:var(--amber);background:rgba(232,168,56,.08)}
+
+/* ── input row ── */
+.inp-row{display:flex;gap:8px;align-items:center;margin-bottom:18px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);padding:9px 13px}
+.inp-lbl{font-size:11px;font-family:var(--mono);color:var(--text3);white-space:nowrap;flex-shrink:0}
+.inp-row input{flex:1;background:transparent;border:none;outline:none;font-family:var(--mono);font-size:13px;color:var(--alice);caret-color:var(--alice)}
+.inp-row input::placeholder{color:var(--text3)}
+.inp-row input:disabled{opacity:.45;cursor:not-allowed}
+.bc{font-size:10.5px;font-family:var(--mono);color:var(--text3);white-space:nowrap}
+.bc.warn{color:var(--red)}
+
+/* ── buttons ── */
+.btns{display:flex;gap:9px;margin-bottom:22px;flex-wrap:wrap}
+.btn{padding:8px 20px;border-radius:var(--r);font-family:var(--mono);font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid;transition:all .14s;letter-spacing:.02em}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.btn-run{background:var(--alice-bg);border-color:var(--alice-bd);color:var(--alice)}
+.btn-run:hover:not(:disabled){background:rgba(79,163,224,.15)}
+.btn-reset{background:transparent;border-color:var(--border2);color:var(--text2)}
+.btn-reset:hover{background:var(--bg3)}
+.btn-tests{background:var(--bob-bg);border-color:var(--bob-bd);color:var(--bob)}
+.btn-tests:hover:not(:disabled){background:rgba(62,207,163,.15)}
+
+/* ── sim grid ── */
+.sim-grid{display:grid;grid-template-columns:1fr 68px 1fr;gap:0;align-items:start}
+
+/* ── device ── */
+.device{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--rl);overflow:hidden;display:flex;flex-direction:column}
+.dev-hdr{display:flex;align-items:center;gap:9px;padding:10px 13px;border-bottom:0.5px solid var(--border);background:var(--bg3);flex-shrink:0}
+.tls{display:flex;gap:5px}
+.tl{width:10px;height:10px;border-radius:50%}
+.tl-r{background:#E24B4A}.tl-y{background:#EF9F27}.tl-g{background:#5bbf6e}
+.dev-name{font-family:var(--mono);font-size:11.5px;color:var(--text2);margin-left:2px}
+.dev-name.a{color:var(--alice)}.dev-name.b{color:var(--bob)}
+.dev-role{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:auto;border:0.5px solid var(--border);padding:2px 8px;border-radius:999px}
+.terminal{padding:13px 15px;font-family:var(--mono);font-size:11.5px;line-height:1.85;overflow-y:auto;max-height:520px;min-height:480px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+.terminal::-webkit-scrollbar{width:4px}
+.terminal::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* terminal text */
+.t-pa{color:var(--alice);opacity:.7}
+.t-pb{color:var(--bob);opacity:.7}
+.t-cmd{color:var(--text);font-weight:500}
+.t-out{color:var(--text2)}
+.t-key{color:var(--bob)}
+.t-cipher{color:var(--purple);word-break:break-all;font-size:10.5px;line-height:1.6}
+.t-plain{color:var(--green);font-weight:500}
+.t-info{color:var(--alice)}
+.t-ok{color:var(--green)}
+.t-err{color:var(--red)}
+.t-dim{color:var(--text3)}
+.t-label{color:var(--amber)}
+.t-cursor{display:inline-block;width:7px;height:12px;background:var(--text2);vertical-align:middle;border-radius:1px;animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── channel ── */
+.channel{display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:5px}
+.ch-lbl{font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center;line-height:1.4}
+.ch-wire{flex:1;width:1px;background:var(--border2);position:relative;min-height:400px}
+.pkt{position:absolute;width:9px;height:9px;border-radius:50%;left:-4px;top:0;opacity:0;transition:top .65s cubic-bezier(.4,0,.2,1)}
+.ch-status{font-family:var(--mono);font-size:9.5px;color:var(--text3);text-align:center}
+
+/* ── info bar ── */
+.info-bar{display:none;gap:8px;margin-top:18px;flex-wrap:wrap}
+.chip{padding:4px 11px;border-radius:var(--r);font-family:var(--mono);font-size:11px;background:var(--bg3);border:0.5px solid var(--border2);color:var(--text3)}
+.chip span{color:var(--text)}
+.chip.ok span{color:var(--green)}
+.chip.err span{color:var(--red)}
+
+/* ── security note ── */
+.sec-note{margin-top:18px;padding:11px 15px;border-radius:var(--r);background:var(--bg3);border:0.5px solid var(--border);border-left:2px solid var(--purple);font-family:var(--mono);font-size:11px;color:var(--text3);line-height:1.75;display:none}
+.sec-note strong{color:var(--text2);font-weight:500}
+
+/* ── test panel ── */
+.test-table{width:100%;font-family:var(--mono);font-size:12px;border-collapse:collapse;margin-top:8px}
+.test-table th{color:var(--text3);font-weight:400;text-align:left;padding:6px 12px;border-bottom:0.5px solid var(--border2);font-size:10.5px;letter-spacing:.04em}
+.test-table td{padding:8px 12px;border-bottom:0.5px solid var(--border);vertical-align:top;color:var(--text2)}
+.test-table tr:last-child td{border-bottom:none}
+.test-table tr.pass td:first-child{color:var(--green)}
+.test-table tr.fail td:first-child{color:var(--red)}
+.tc-pass{color:var(--green);font-weight:500}
+.tc-fail{color:var(--red);font-weight:500}
+.tc-note{color:var(--text3);font-size:10.5px}
+.test-summary{margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--text2);padding:8px 12px;background:var(--bg3);border-radius:var(--r)}
+.test-summary span{color:var(--green);font-weight:500}
+
+/* ── loading spinner ── */
+.spinner{display:inline-block;width:10px;height:10px;border:1.5px solid var(--border2);border-top-color:var(--alice);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── responsive ── */
+@media(max-width:680px){
+  .sim-grid{grid-template-columns:1fr}
+  .channel{flex-direction:row;padding:0;min-height:40px}
+  .ch-wire{width:100%;height:1px;min-height:unset}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <h1>Secure Message Communication</h1>
+    <p>rsa-2048 · oaep-sha256 · live python backend · alice → bob</p>
+  </div>
+  <div class="badges">
+    <span class="badge">RSA-2048</span>
+    <span class="badge">OAEP-SHA256</span>
+    <span class="badge live">live backend</span>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('sim')">simulation</button>
+  <button class="tab-btn" onclick="switchTab('tests')">test suite</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 1 — SIMULATION
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="tab-sim">
+
+  <div class="steps">
+    <span class="steps-lbl">protocol:</span>
+    <div class="sp active" id="sp0">① key generation</div>
+    <div class="sp" id="sp1">② key exchange</div>
+    <div class="sp" id="sp2">③ encryption</div>
+    <div class="sp" id="sp3">④ transmission</div>
+    <div class="sp" id="sp4">⑤ decryption</div>
+    <div class="sp" id="sp5">⑥ verified</div>
+  </div>
+
+  <div class="inp-row">
+    <span class="inp-lbl">alice@message $</span>
+    <input type="text" id="msgInput"
+      value="Hello Bob! The meeting is at 3 PM. — Alice"
+      placeholder="Enter Alice's plaintext message…"
+      maxlength="190">
+    <span class="bc" id="bc">43 / 190 bytes</span>
+  </div>
+
+  <div class="btns">
+    <button class="btn btn-run" id="runBtn" onclick="startSim()">run simulation</button>
+    <button class="btn btn-reset" id="resetBtn" onclick="resetSim()" style="display:none">reset</button>
+  </div>
+
+  <div class="sim-grid">
+    <!-- Alice -->
+    <div class="device">
+      <div class="dev-hdr">
+        <div class="tls"><div class="tl tl-r"></div><div class="tl tl-y"></div><div class="tl tl-g"></div></div>
+        <span class="dev-name a">alice@secure-terminal</span>
+        <span class="dev-role">sender</span>
+      </div>
+      <div class="terminal" id="aliceTerm">
+        <div><span class="t-pa">alice@secure-terminal:~$</span> <span class="t-cursor"></span></div>
+      </div>
+    </div>
+
+    <!-- Channel -->
+    <div class="channel">
+      <div class="ch-lbl">insecure<br>channel</div>
+      <div class="ch-wire" id="chWire">
+        <div class="pkt" id="pktUp"   style="background:#4fa3e0"></div>
+        <div class="pkt" id="pktDown" style="background:#9d8ff5"></div>
+      </div>
+      <div class="ch-status" id="chStatus">idle</div>
+    </div>
+
+    <!-- Bob -->
+    <div class="device">
+      <div class="dev-hdr">
+        <div class="tls"><div class="tl tl-r"></div><div class="tl tl-y"></div><div class="tl tl-g"></div></div>
+        <span class="dev-name b">bob@secure-terminal</span>
+        <span class="dev-role">receiver</span>
+      </div>
+      <div class="terminal" id="bobTerm">
+        <div><span class="t-pb">bob@secure-terminal:~$</span> <span class="t-cursor"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info bar -->
+  <div class="info-bar" id="infoBar">
+    <div class="chip">algorithm <span>RSA-2048</span></div>
+    <div class="chip">padding <span>OAEP-SHA256</span></div>
+    <div class="chip">key size <span id="chipKey">—</span></div>
+    <div class="chip">exponent e <span id="chipExp">—</span></div>
+    <div class="chip">keygen <span id="chipKg">—</span></div>
+    <div class="chip">encrypt <span id="chipEnc">—</span></div>
+    <div class="chip">decrypt <span id="chipDec">—</span></div>
+    <div class="chip">ciphertext <span id="chipCt">—</span></div>
+    <div class="chip" id="chipStatus">status <span>running…</span></div>
+  </div>
+
+  <!-- Security note -->
+  <div class="sec-note" id="secNote">
+    <strong>Why this is secure:</strong> Alice encrypted using Bob's public key — only Bob's private key
+    (never transmitted) can decrypt it. The OAEP padding introduced a fresh random seed before encryption,
+    making the output probabilistic and defeating chosen-plaintext attacks.
+    An eavesdropper who captured the ciphertext in transit sees only
+    <strong>256 bytes of computationally indistinguishable noise</strong> —
+    breaking it requires factoring a 2048-bit RSA modulus, estimated to take
+    longer than the age of the universe with classical computers.
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 2 — TEST SUITE
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-tests">
+
+  <div class="btns" style="margin-top:4px">
+    <button class="btn btn-tests" id="testRunBtn" onclick="startTests()">run all tests</button>
+    <button class="btn btn-reset" id="testResetBtn" onclick="resetTests()" style="display:none">reset</button>
+  </div>
+
+  <div style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--rl);overflow:hidden">
+    <table class="test-table">
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>description</th>
+          <th>result</th>
+          <th>notes</th>
+        </tr>
+      </thead>
+      <tbody id="testBody">
+        <tr id="tc-placeholder">
+          <td colspan="4" style="color:var(--text3);text-align:center;padding:24px">
+            press "run all tests" to execute the test suite against the live backend
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="test-summary" id="testSummary" style="display:none"></div>
+
+</div>
+
+
+<script>
+/* ══════════════════════════════════════════════════════
+   Utilities
+══════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const aP = '<span class="t-pa">alice@secure-terminal:~$</span>';
+const bP = '<span class="t-pb">bob@secure-terminal:~$</span>';
+
+function byteLen(s){ return new TextEncoder().encode(s).length; }
+
+$('msgInput').addEventListener('input', () => {
+  const b = byteLen($('msgInput').value);
+  $('bc').textContent = b + ' / 190 bytes';
+  $('bc').classList.toggle('warn', b > 190);
+});
+
+function setStep(i){
+  for(let j=0;j<6;j++){
+    const el=$('sp'+j);
+    if(j<i)        el.className='sp done';
+    else if(j===i) el.className='sp active';
+    else           el.className='sp';
+  }
+}
+
+function removeCursor(term){
+  const c=term.querySelector('.t-cursor');
+  if(c) c.closest('div').remove();
+}
+function addCursor(term, prompt){
+  const d=document.createElement('div');
+  d.innerHTML=prompt+' <span class="t-cursor"></span>';
+  term.appendChild(d);
+  term.scrollTop=term.scrollHeight;
+}
+function addLine(term, html){
+  removeCursor(term);
+  const d=document.createElement('div');
+  d.innerHTML=html;
+  term.appendChild(d);
+  term.scrollTop=term.scrollHeight;
+}
+function addBlank(term){ addLine(term,'&nbsp;'); }
+
+async function typeCmd(term, prompt, cmd){
+  removeCursor(term);
+  const d=document.createElement('div');
+  const sid='tc_'+Date.now();
+  d.innerHTML=prompt+' <span class="t-cmd" id="'+sid+'"></span>';
+  term.appendChild(d);
+  const span=document.getElementById(sid);
+  for(let i=0;i<=cmd.length;i++){
+    span.textContent=cmd.slice(0,i);
+    term.scrollTop=term.scrollHeight;
+    await sleep(20+Math.random()*22);
+  }
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function animatePkt(pkt, dir){
+  return new Promise(res=>{
+    const wire=$('chWire');
+    const h=wire.getBoundingClientRect().height||400;
+    pkt.style.transition='none';
+    pkt.style.opacity='1';
+    if(dir==='up'){ pkt.style.top=(h-10)+'px'; }
+    else           { pkt.style.top='0px'; }
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      pkt.style.transition='top .65s cubic-bezier(.4,0,.2,1)';
+      pkt.style.top = dir==='up' ? '0px' : (h-10)+'px';
+    }));
+    setTimeout(()=>{ pkt.style.opacity='0'; res(); }, 760);
+  });
+}
+
+function renderLines(term, lines){
+  for(const l of lines) addLine(term, `<span class="${l.cls}">${escHtml(l.text)}</span>`);
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ══════════════════════════════════════════════════════
+   Tab switching
+══════════════════════════════════════════════════════ */
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', ['sim','tests'][i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  $('tab-'+name).classList.add('active');
+}
+
+/* ══════════════════════════════════════════════════════
+   SIMULATION
+══════════════════════════════════════════════════════ */
+let simES = null;
+
+async function startSim(){
+  const msg = $('msgInput').value.trim() || 'Hello Bob!';
+  if(byteLen(msg) > 190){ $('bc').classList.add('warn'); return; }
+
+  $('runBtn').disabled = true;
+  $('msgInput').disabled = true;
+  $('resetBtn').style.display = 'none';
+  $('infoBar').style.display = 'flex';
+  $('secNote').style.display = 'none';
+  $('chipStatus').innerHTML = 'status <span><span class="spinner"></span>running…</span>';
+
+  const aT=$('aliceTerm'), bT=$('bobTerm');
+  aT.innerHTML=''; bT.innerHTML='';
+
+  if(simES) simES.close();
+  simES = new EventSource('/simulate?message='+encodeURIComponent(msg));
+
+  simES.addEventListener('start', ()=>{
+    addCursor(bT, bP);
+    addLine(aT, '<span class="t-dim">Waiting for Bob\'s public key…</span>');
+  });
+
+  simES.addEventListener('step', e=>{
+    const d=JSON.parse(e.data);
+    setStep(d.step);
+    const term = d.actor==='alice' ? aT : bT;
+    const prompt = d.actor==='alice' ? aP : bP;
+    (async()=>{
+      await typeCmd(term, prompt, d.cmd);
+      renderLines(term, d.lines);
+    })();
+  });
+
+  simES.addEventListener('keygen_done', e=>{
+    const d=JSON.parse(e.data);
+    renderLines(bT, d.lines);
+    addBlank(bT);
+    addCursor(bT, bP);
+    $('chipKey').textContent = d.modulus_bits+' bit';
+    $('chipExp').textContent = d.exponent;
+    $('chipKg').textContent  = d.keygen_ms+'ms';
+  });
+
+  simES.addEventListener('key_transmit', async e=>{
+    const d=JSON.parse(e.data);
+    addLine(bT,'<span class="t-info">  public key transmitted. ('+d.pem_size+' bytes, safe to share openly)</span>');
+    addBlank(bT);
+    addCursor(bT, bP);
+    $('chStatus').textContent='pub key →';
+    await animatePkt($('pktUp'),'up');
+    $('chStatus').textContent='idle';
+  });
+
+  simES.addEventListener('key_received', e=>{
+    const d=JSON.parse(e.data);
+    removeCursor(aT);
+    for(const ln of d.pem_lines){
+      if(ln.trim()) addLine(aT,'<span class="t-dim">  '+escHtml(ln)+'</span>');
+    }
+    renderLines(aT, d.lines);
+    addBlank(aT);
+    addCursor(aT, aP);
+  });
+
+  simES.addEventListener('encrypt_done', e=>{
+    const d=JSON.parse(e.data);
+    for(const ln of d.ciphertext_lines){
+      addLine(aT,'<span class="t-cipher">'+escHtml(ln)+'</span>');
+    }
+    renderLines(aT, d.lines);
+    addBlank(aT);
+    addCursor(aT, aP);
+    $('chipEnc').textContent = d.encrypt_ms+'ms';
+    $('chipCt').textContent  = d.ct_bytes+' bytes';
+  });
+
+  simES.addEventListener('cipher_transmit', async e=>{
+    const d=JSON.parse(e.data);
+    addLine(aT,'<span class="t-info">  transmission complete. eavesdroppers see only random bytes.</span>');
+    addBlank(aT);
+    addCursor(aT, aP);
+    $('chStatus').textContent='ciphertext →';
+    await animatePkt($('pktDown'),'down');
+    $('chStatus').textContent='idle';
+  });
+
+  simES.addEventListener('cipher_received', e=>{
+    const d=JSON.parse(e.data);
+    removeCursor(bT);
+    renderLines(bT, d.lines);
+    for(const ln of d.ciphertext_lines){
+      addLine(bT,'<span class="t-cipher">'+escHtml(ln)+'</span>');
+    }
+    addLine(bT,'<span class="t-info">  '+d.ct_bytes+' bytes received from Alice.</span>');
+    addBlank(bT);
+    addCursor(bT, bP);
+  });
+
+  simES.addEventListener('decrypt_done', e=>{
+    const d=JSON.parse(e.data);
+    renderLines(bT, d.lines);
+    addBlank(bT);
+    addCursor(bT, bP);
+    $('chipDec').textContent = d.decrypt_ms+'ms';
+  });
+
+  simES.addEventListener('verified', e=>{
+    const d=JSON.parse(e.data);
+    renderLines(bT, d.lines);
+    addBlank(bT);
+    addCursor(bT, bP);
+
+    // Alice final line
+    (async()=>{
+      await typeCmd(aT, aP, '# Transmission complete. Bob has decrypted the message.');
+      addCursor(aT, aP);
+    })();
+
+    const ok = d.match;
+    $('chipStatus').innerHTML = ok
+      ? 'status <span style="color:var(--green)">secure ✓</span>'
+      : 'status <span style="color:var(--red)">FAILED ✗</span>';
+    $('chStatus').textContent='closed';
+    $('secNote').style.display = ok ? 'block' : 'none';
+    $('resetBtn').style.display='';
+    simES.close();
+  });
+
+  simES.addEventListener('error', e=>{
+    try{
+      const d=JSON.parse(e.data);
+      addLine(aT,'<span class="t-err">ERROR: '+escHtml(d.msg)+'</span>');
+    }catch(_){}
+    $('resetBtn').style.display='';
+    simES.close();
+  });
+}
+
+function resetSim(){
+  const aT=$('aliceTerm'), bT=$('bobTerm');
+  aT.innerHTML='<div>'+aP+' <span class="t-cursor"></span></div>';
+  bT.innerHTML='<div>'+bP+' <span class="t-cursor"></span></div>';
+  setStep(0);
+  $('runBtn').disabled=false;
+  $('msgInput').disabled=false;
+  $('infoBar').style.display='none';
+  $('secNote').style.display='none';
+  $('chStatus').textContent='idle';
+  $('resetBtn').style.display='none';
+  $('pktUp').style.opacity='0';
+  $('pktDown').style.opacity='0';
+  $('msgInput').style.outline='';
+  if(simES) simES.close();
+}
+
+/* ══════════════════════════════════════════════════════
+   TEST SUITE
+══════════════════════════════════════════════════════ */
+let testES = null;
+
+function startTests(){
+  $('testRunBtn').disabled=true;
+  $('testResetBtn').style.display='none';
+  $('testSummary').style.display='none';
+  $('tc-placeholder') && ($('tc-placeholder').remove());
+  $('testBody').innerHTML='';
+
+  if(testES) testES.close();
+  testES = new EventSource('/run_tests');
+
+  testES.addEventListener('test_result', e=>{
+    const d=JSON.parse(e.data);
+    const tr=document.createElement('tr');
+    tr.className = d.pass ? 'pass' : 'fail';
+    tr.innerHTML=`
+      <td>${escHtml(d.id)}</td>
+      <td>${escHtml(d.desc)}</td>
+      <td class="${d.pass?'tc-pass':'tc-fail'}">${d.pass ? 'PASS ✓' : 'FAIL ✗'}</td>
+      <td class="tc-note">${escHtml(d.note||'—')}</td>
+    `;
+    $('testBody').appendChild(tr);
+  });
+
+  testES.addEventListener('tests_done', e=>{
+    const d=JSON.parse(e.data);
+    $('testSummary').style.display='block';
+    $('testSummary').innerHTML=`<span>${d.passed}/${d.total}</span> test cases passed.`;
+    $('testResetBtn').style.display='';
+    testES.close();
+  });
+
+  testES.addEventListener('error', ()=>{
+    $('testResetBtn').style.display='';
+    testES && testES.close();
+  });
+}
+
+function resetTests(){
+  $('testBody').innerHTML=`<tr id="tc-placeholder"><td colspan="4" style="color:var(--text3);text-align:center;padding:24px">press "run all tests" to execute the test suite against the live backend</td></tr>`;
+  $('testSummary').style.display='none';
+  $('testRunBtn').disabled=false;
+  $('testResetBtn').style.display='none';
+  if(testES) testES.close();
+}
+</script>
+</body>
+</html>
