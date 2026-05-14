@@ -112,7 +112,6 @@ def encrypt_message(plaintext: str, bob_public_key) -> bytes:
     return ciphertext
 
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 3 — MESSAGE DECRYPTION (Bob's side)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -144,7 +143,6 @@ def decrypt_message(ciphertext: bytes, bob_private_key) -> str:
         )
     )
     return plaintext_bytes.decode("utf-8")
-
 
 
 # ─────────────────────────────────────────────────────────────────────────────
