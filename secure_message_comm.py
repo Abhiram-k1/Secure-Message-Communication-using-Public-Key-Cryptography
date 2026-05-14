@@ -112,34 +112,6 @@ def encrypt_message(plaintext: str, bob_public_key) -> bytes:
     return ciphertext
 
 
-def encrypt_message_bytes(plaintext_bytes: bytes, bob_public_key) -> bytes:
-    """
-    Encrypt raw bytes using Bob's RSA public key with OAEP padding.
-
-    This variant accepts raw bytes instead of a string, which is essential
-    for the Ultimate Hybrid Protocol where RSA is used to encapsulate
-    (encrypt) the randomly generated AES-256 symmetric key — which is
-    raw binary data, not a human-readable string.
-
-    Parameters
-    ----------
-    plaintext_bytes : bytes         — raw bytes to encrypt (e.g. an AES key)
-    bob_public_key  : RSAPublicKey  — Bob's public key
-
-    Returns
-    -------
-    ciphertext : bytes — the RSA-OAEP encrypted bytes
-    """
-    ciphertext = bob_public_key.encrypt(
-        plaintext_bytes,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    return ciphertext
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 3 — MESSAGE DECRYPTION (Bob's side)
@@ -173,33 +145,6 @@ def decrypt_message(ciphertext: bytes, bob_private_key) -> str:
     )
     return plaintext_bytes.decode("utf-8")
 
-
-def decrypt_message_bytes(ciphertext: bytes, bob_private_key) -> bytes:
-    """
-    Decrypt RSA-OAEP ciphertext and return raw bytes (without UTF-8 decoding).
-
-    This variant is used in the Ultimate Hybrid Protocol to recover the
-    AES-256 key that was encapsulated with RSA.  The result is raw binary
-    (32 bytes for AES-256), not a human-readable string.
-
-    Parameters
-    ----------
-    ciphertext      : bytes          — the RSA-OAEP encrypted bytes
-    bob_private_key : RSAPrivateKey  — Bob's secret key (never shared)
-
-    Returns
-    -------
-    plaintext_bytes : bytes — the original raw bytes (e.g. the AES key)
-    """
-    plaintext_bytes = bob_private_key.decrypt(
-        ciphertext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    return plaintext_bytes
 
 
 # ─────────────────────────────────────────────────────────────────────────────
